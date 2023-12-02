@@ -12,5 +12,6 @@ main = do
       putStrLn "Stock Performance Data:"
       print stockData
       
-      let (intercept, slope) = performLinearRegression stockData
-      putStrLn $ "Linear Regression Model: Close = " ++ show intercept ++ " + " ++ show slope ++ " * Open"
+      case performLinearRegression stockData of
+         Right (LinearRegressionModel coeff) -> putStrLn $ "Linear Regression Model: Close = " ++ show head coeff  ++ " + " ++ show coeff !! 1 ++ " * Open"
+         Left err -> putStrLn err
