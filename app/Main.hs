@@ -10,8 +10,10 @@ main = do
     Left err -> putStrLn $ "Error reading stock data: " ++ err
     Right stockData -> do
       putStrLn "Stock Performance Data:"
-      print stockData
+      -- print stockData
       
       case performLinearRegression stockData of
-         Right (LinearRegressionModel coeff) -> putStrLn $ "Linear Regression Model: Close = " ++ show head coeff  ++ " + " ++ show coeff !! 1 ++ " * Open"
+         Right model -> case model of
+          (LinearRegressionModel coeffs) -> putStrLn $ "Linear Regression Model: Close = " ++ show (head coeffs)  ++ " + " ++ show (coeffs !! 1) ++ " * Open"
+          (PolynomialRegressionModel deg coeffs) -> putStrLn $ "Polynomial Regression Model: Deg = " ++ show deg  ++ ", " ++ show coeffs
          Left err -> putStrLn err

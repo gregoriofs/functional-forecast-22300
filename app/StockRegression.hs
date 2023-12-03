@@ -4,14 +4,14 @@
 module StockRegression where
 
 import ProcessCSVData
-import Debug.Trace (trace)
+import Debug.Trace (trace, traceM, traceShow)
 import Numeric.LinearAlgebra ((<>), vector)
 import qualified Numeric.LinearAlgebra as LA
 import qualified Numeric.LinearAlgebra.HMatrix as HM
 
 data RegressionModel = PolynomialRegressionModel Int [Double] | LinearRegressionModel [Double]
    deriving (Show)
-
+  
 -- Perform linear regression on stock data
 performLinearRegression :: [StockPerformance] -> Either String RegressionModel
 performLinearRegression stockData = do
@@ -25,25 +25,36 @@ performLinearRegression stockData = do
       
      Right $ LinearRegressionModel [coefficients `HM.atIndex` (0, 0), coefficients `HM.atIndex`  (1, 0)])
 
--- Polynomial feature transformation
-polyFeatures :: Int -> LA.Vector Double -> LA.Matrix Double
-polyFeatures deg x =
-  HM.fromColumns [HM.fromList [xval ^ expn | expn <- [0 .. deg]] | xval <- LA.toList x]
+-- Convert StockPerformance to a feature vector
+stockToFeatureVector :: StockPerformance -> LA.Vector Double
+stockToFeatureVector stock = LA.vector [open stock, high stock, low stock, fromIntegral $ volume stock]
+
+-- Polynomial feature transformation for a matrix of stock performances
+polyFeaturesMatrix :: Int -> HM.Matrix Double -> HM.Matrix Double
+polyFeaturesMatrix deg x =
+  let lst = HM.toLists x in
+    HM.fromLists [[xval ^ exp | xval <- row, exp <- [2..deg]] | row <- lst]
+
 
 -- Perform polynomial regression
-polynomialRegression :: Int -> LA.Vector Double -> [Double] -> Either String RegressionModel
-polynomialRegression deg x y = do
-  let xPoly = polyFeatures deg x
+polynomialRegression :: Int -> [StockPerformance] -> Either String RegressionModel
+polynomialRegression deg stockData = do
+  let xValues = map stockToFeatureVector stockData
+      yValues = HM.fromLists [[close stock] | stock <- stockData]
+      xPoly = polyFeaturesMatrix deg (HM.fromRows xValues)
       xTrans = LA.tr xPoly
-      coefficientsMatrix = LA.linearSolveSVD xTrans (HM.fromLists [[item] | item <- y])
+      -- _ = traceShow (HM.size xPoly, HM.size yValues)
+      coefficientsMatrix = LA.linearSolveSVD xPoly yValues
   (if null (HM.toLists coefficientsMatrix) then
      Left "Polynomial regression failed: Singular matrix"
-   else
-   trace "sdafs"
-     Right
-       $ PolynomialRegressionModel deg (LA.toList coefficientsMatrix))
+  else
+     (do let coefficientsVector = LA.takeRows 1 coefficientsMatrix
+         Right
+           $ PolynomialRegressionModel deg $ head $ HM.toLists coefficientsVector))
 
 -- Predict using the polynomial regression model
-predict :: RegressionModel -> LA.Vector Double -> Double
-predict (PolynomialRegressionModel degree coefficients) x =
-  sum $ zipWith (*) coefficients [x `HM.atIndex` expn | expn <- [0 .. degree]]
+predictPoly :: RegressionModel -> StockPerformance -> Double
+predictPoly (PolynomialRegressionModel deg coeffs) stock =
+  sum $ zipWith (*) coeffs [xval ^ expn | expn <- [0 .. deg]]
+  where
+    xval = open stock  -- Use 'open' as an example; you can adjust it based on your features
