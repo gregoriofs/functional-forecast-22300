@@ -9,15 +9,10 @@ data RegressionModel = PolynomialRegressionModel Int [Double] | LinearRegression
    deriving (Show)
 
 -- Lagged values function with rolling mean as an additional feature
-laggedValuesWithRollingMean :: Int -> Int -> [PriceResponse] -> [[Double]]
-laggedValuesWithRollingMean lag window responses =
-  let t1 = map (\i -> take lag $ map close (drop i responses)) [0..length responses - lag - 1]
-      t2 =  map (\i -> [rollingMean window (take i responses)]) [0..length responses - lag - 1] in
-        zipWith (++) t1 t2
-
--- Rolling mean function
-rollingMean :: Int -> [PriceResponse] -> Double
-rollingMean window responses = sum (map close (take window responses)) / fromIntegral window
+laggedValuesWithRollingMean :: Int -> [PriceResponse] -> [[Double]]
+laggedValuesWithRollingMean lag responses =
+  let t1 = map (\i -> 1 : (take lag $ map close (drop i responses))) [0..length responses - lag - 1] in
+    t1
 
 linearRegression :: [[Double]] -> [Double] -> Either String RegressionModel
 linearRegression xs ys =
@@ -33,7 +28,7 @@ linearRegression xs ys =
         Right $ LinearRegressionModel result
 
 performLinearRegression :: [PriceResponse] -> Either String RegressionModel
-performLinearRegression responses = let y = map close responses; x = laggedValuesWithRollingMean 2 2 responses in
+performLinearRegression responses = let y = map close responses; x = laggedValuesWithRollingMean 2 responses in
     linearRegression x y
 
 -- Prediction function
