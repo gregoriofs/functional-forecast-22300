@@ -11,9 +11,9 @@ main = do
     Right stockData -> do
       putStrLn "Stock Performance Data:"
       -- print stockData
-      
+      -- TODO: get ticker from terminal and model,  use api to request using yahoo-prices 
       case performLinearRegression stockData of
          Right model -> case model of
-          (LinearRegressionModel coeffs) -> putStrLn $ "Linear Regression Model: Close = " ++ show (head coeffs)  ++ " + " ++ show (coeffs !! 1) ++ " * Open"
-          (PolynomialRegressionModel deg coeffs) -> putStrLn $ "Polynomial Regression Model: Deg = " ++ show deg  ++ ", " ++ show coeffs
+          (LinearRegressionModel coeffs) -> putStrLn $ "Linear Regression Model: coeffs = " ++ show coeffs
+          (PolynomialRegressionModel deg coeffs) -> putStrLn $ "Polynomial Regression Model: Deg = " ++ show coeffs
          Left err -> putStrLn err
