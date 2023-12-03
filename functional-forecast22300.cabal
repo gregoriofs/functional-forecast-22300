@@ -10,7 +10,7 @@ executable functional-forecast22300
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules: ProcessCSVData, StockRegression
+    other-modules: ProcessCSVData, StockRegression, ApiRequests, Plotting, TimeSeriesRegression
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -22,6 +22,8 @@ executable functional-forecast22300
         vector,
         hmatrix >= 0.20.2,
         yahoo-prices,
-        debug
+        debug,
+        optparse-applicative,
+        time
     hs-source-dirs:   app
     default-language: Haskell2010
