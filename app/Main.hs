@@ -3,6 +3,7 @@ module Main where
 import ProcessCSVData
 import StockRegression
 import ApiRequests
+import Plotting
 
 import Options.Applicative
 import Data.Time
@@ -35,17 +36,20 @@ parseCommandLine = execParser opts
     
 main :: IO ()
 main = do
-  let filePath = "/Users/gregorioflorentino/Downloads/AAPL.csv"
+  let filePath = "/Users/prathamgandhi/Downloads/AAPL.csv"
   result <- readStockData filePath
   -- Read ticker, dates
-  params <- parseCommandLine
-  result <- requestInformation (tickerSymbol params) (startDate params) (endDate params)
+  --params <- parseCommandLine
+  --result <- requestInformation (tickerSymbol params) (startDate params) (endDate params)
 
   case result of
     Left err -> putStrLn $ "Error reading stock data: " ++ err
     Right stockData -> do
       putStrLn "Stock Performance Data:"
       print stockData
+      let chart = createClosePriceChart stockData
+      saveChartAsHtml "stockPerformance.html" chart
+      putStrLn "Visualization saved to stockPerformance.html"
       case performLinearRegression stockData of
          Right model -> case model of
           (LinearRegressionModel coeffs) -> putStrLn $ "Linear Regression Model: coeffs = " ++ show coeffs
