@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 import ProcessCSVData
-import StockRegression
+-- import StockRegression
+import TimeSeriesRegression
 import ApiRequests
 
 import Options.Applicative
@@ -36,8 +37,6 @@ parseCommandLine = execParser opts
 main :: IO ()
 main = do
   let filePath = "/Users/gregorioflorentino/Downloads/AAPL.csv"
-  result <- readStockData filePath
-  -- Read ticker, dates
   params <- parseCommandLine
   result <- requestInformation (tickerSymbol params) (startDate params) (endDate params)
 
@@ -48,6 +47,9 @@ main = do
       print stockData
       case performLinearRegression stockData of
          Right model -> case model of
-          (LinearRegressionModel coeffs) -> putStrLn $ "Linear Regression Model: coeffs = " ++ show coeffs
+          (LinearRegressionModel coeffs) -> do
+            putStrLn $ "Linear Regression Model: coeffs = " ++ show coeffs
+            let prediction = predict model (1 : calculateLaggedValuesForNewDay stockData 2 (fromGregorian 2023 12 1))
+            print prediction
           (PolynomialRegressionModel deg coeffs) -> putStrLn $ "Polynomial Regression Model: Deg = " ++ show coeffs
          Left err -> putStrLn err
