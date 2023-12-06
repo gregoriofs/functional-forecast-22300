@@ -4,7 +4,7 @@ import ProcessCSVData
 -- import StockRegression
 import TimeSeriesRegression
 import ApiRequests
-
+import Plotting
 import Options.Applicative
 import Data.Time
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
@@ -14,6 +14,9 @@ data CommandLineOptions = CommandLineOptions
   , startDate :: Day
   , endDate :: Day
   }
+
+lAG :: Int
+lAG = 3
 
 -- Parser for command line options
 commandLineParser :: Parser CommandLineOptions
@@ -33,7 +36,13 @@ parseCommandLine :: IO CommandLineOptions
 parseCommandLine = execParser opts
   where
     opts = info (commandLineParser <**> helper) fullDesc
-    
+
+getToday :: IO Day
+getToday = do
+  currentTime <- getCurrentTime
+  let today = utctDay currentTime
+  return today
+
 main :: IO ()
 main = do
   let filePath = "/Users/gregorioflorentino/Downloads/AAPL.csv"
@@ -45,11 +54,18 @@ main = do
     Right stockData -> do
       putStrLn "Stock Performance Data:"
       print stockData
-      case performLinearRegression stockData of
+      let chart = createClosePriceChart stockData
+      today <- getToday
+      saveChartAsHtml "stockPerformance.html" chart
+      putStrLn "Visualization saved to stockPerformance.html"
+      case performLinearRegression stockData lAG of
          Right model -> case model of
           (LinearRegressionModel coeffs) -> do
             putStrLn $ "Linear Regression Model: coeffs = " ++ show coeffs
-            let prediction = predict model (1 : calculateLaggedValuesForNewDay stockData 2 (fromGregorian 2023 12 1))
-            print prediction
-          (PolynomialRegressionModel deg coeffs) -> putStrLn $ "Polynomial Regression Model: Deg = " ++ show coeffs
+            let chart2 = generatePlot stockData model (tickerSymbol params) today lAG
+            saveChartAsHtml "stockPerformance2.html" chart2
+            putStrLn "Visualization 2 saved to stockPerformance2.html"
+            let prediction = predict model $ generateNewFeatures stockData lAG today
+            return ()
+          -- (PolynomialRegressionModel deg coeffs) -> putStrLn $ "Polynomial Regression Model: Deg = " ++ show coeffs
          Left err -> putStrLn err

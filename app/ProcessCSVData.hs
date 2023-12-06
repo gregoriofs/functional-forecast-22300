@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 module ProcessCSVData where
-    
+  
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import GHC.Generics
 import qualified Data.Vector as V
+import Data.Time
 
 data StockPerformance = StockPerformance
   { date :: String
@@ -43,3 +44,7 @@ readStockData filePath = do
   case decodeByName csvData of
     Left err -> return (Left err)
     Right (_, records) -> return (Right (V.toList records))
+
+parseDateString :: String -> Maybe Day
+parseDateString dateString =
+  parseTimeM True defaultTimeLocale "%Y-%m-%d" dateString :: Maybe Day

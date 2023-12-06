@@ -3,7 +3,7 @@
 
 module StockRegression where
 
-import ProcessCSVData
+import Web.Data.Yahoo.Response
 import Debug.Trace (trace, traceM, traceShow)
 import Numeric.LinearAlgebra ((<>), vector)
 import qualified Numeric.LinearAlgebra as LA
@@ -11,13 +11,13 @@ import qualified Numeric.LinearAlgebra.HMatrix as HM
 
 data RegressionModel = PolynomialRegressionModel Int [Double] | LinearRegressionModel [Double]
    deriving (Show)
+-- TIME SERIES IT ALL
 
 -- Perform linear regression on stock data
-performLinearRegression :: [StockPerformance] -> Either String RegressionModel
+performLinearRegression :: [PriceResponse] -> Either String RegressionModel
 performLinearRegression stockData = do
-  let x = HM.fromLists $ [[1,open s, high s, low s, fromIntegral (volume s)] | s <- stockData]
+  let x = HM.fromLists $ [[1,open s, high s, low s, volume s] | s <- stockData]
       y = HM.fromLists [[close s] | s <- stockData]
-      -- trace show (HM.size xTrans, HM.size y)
       coefficients = LA.linearSolveSVD x y
   (if null (HM.toLists coefficients) then
      Left "Linear regression failed: Singular matrix"
@@ -26,9 +26,9 @@ performLinearRegression stockData = do
 
 -- TODO: Func to predict using linear regression model
 
--- Convert StockPerformance to a feature vector
-stockToFeatureVector :: StockPerformance -> LA.Vector Double
-stockToFeatureVector stock = LA.vector [open stock, high stock, low stock, fromIntegral $ volume stock]
+-- Convert PriceResponse to a feature vector
+stockToFeatureVector :: PriceResponse -> LA.Vector Double
+stockToFeatureVector stock = LA.vector [open stock, high stock, low stock, volume stock]
 
 -- Polynomial feature transformation for a matrix of stock performances
 polyFeaturesMatrix :: Int -> HM.Matrix Double -> HM.Matrix Double
@@ -37,7 +37,7 @@ polyFeaturesMatrix deg x =
     HM.fromLists [[xval ^ exp | xval <- row, exp <- [2..deg]] | row <- lst]
 
 -- Perform polynomial regression
-polynomialRegression :: Int -> [StockPerformance] -> Either String RegressionModel
+polynomialRegression :: Int -> [PriceResponse] -> Either String RegressionModel
 polynomialRegression deg stockData = do
   let xValues = map stockToFeatureVector stockData
       yValues = HM.fromLists [[close stock] | stock <- stockData]
@@ -53,7 +53,7 @@ polynomialRegression deg stockData = do
 
 -- Predict using the polynomial regression model
 -- TODO: Check if this actually works
-predictPoly :: RegressionModel -> StockPerformance -> Double
+predictPoly :: RegressionModel -> PriceResponse -> Double
 predictPoly (PolynomialRegressionModel deg coeffs) stock =
   sum $ zipWith (*) coeffs [xval ^ expn | expn <- [0 .. deg]]
   where
