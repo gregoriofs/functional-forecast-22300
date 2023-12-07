@@ -17,7 +17,7 @@ data CommandLineOptions = CommandLineOptions
   }
 
 lAG :: Int
-lAG = 3
+lAG = 2
 
 -- Parser for command line options
 commandLineParser :: Parser CommandLineOptions

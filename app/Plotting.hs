@@ -30,7 +30,7 @@ createClosePriceChart stockData =
         enc = VL.encoding . VL.position VL.X [VL.PName "Date", VL.PmType VL.Temporal]
                        . VL.position VL.Y [VL.PName "Close", VL.PmType VL.Quantitative]
 
-    in VL.toVegaLite [dataValues, VL.mark VL.Line [], enc []]
+    in VL.toVegaLite [dataValues, VL.height 600, VL.width 900, VL.mark VL.Line [], enc []]
 
 -- convert  to hvega data for generatePlot
 toVegaData2 :: [PriceResponse] -> [Double] -> [Value]
@@ -42,7 +42,6 @@ generatePlot stockData model ticker currDay lag =
   let predictions = map (predict model . generateNewFeatures stockData lag . date) stockData
       lVs = laggedValues lag stockData
       (newPreds, newSDs) = predictMonthInAdvance model stockData lVs lag currDay currDay
-      
       -- Combine data for plotting
       plotData = VL.dataFromRows [] $ toVegaData2 (stockData ++ newSDs) (predictions ++ newPreds)
       enc1 = VL.encoding . 
