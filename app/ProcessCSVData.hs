@@ -7,6 +7,7 @@ import GHC.Generics
 import qualified Data.Vector as V
 import Data.Time
 
+-- custom data type for testing
 data StockPerformance = StockPerformance
   { date :: String
   , open :: Double
@@ -18,6 +19,7 @@ data StockPerformance = StockPerformance
   }
   deriving (Show, Generic)
 
+-- custom field reader
 customFieldNameModifier :: String -> String
 customFieldNameModifier "date" = "Date"
 customFieldNameModifier "open" = "Open"
@@ -37,6 +39,7 @@ instance ToNamedRecord StockPerformance where
     defaultOptions { fieldLabelModifier = customFieldNameModifier }
 instance DefaultOrdered StockPerformance
 
+-- Reads in data from given csv at filepath and returns list of StockPerformance objects 
 readStockData :: FilePath -> IO (Either String [StockPerformance])
 readStockData filePath = do
   csvData <- BL.readFile filePath
@@ -45,6 +48,7 @@ readStockData filePath = do
     Left err -> return (Left err)
     Right (_, records) -> return (Right (V.toList records))
 
+-- Take a string of the form yyyy-mm-dd and return a day object
 parseDateString :: String -> Maybe Day
 parseDateString dateString =
   parseTimeM True defaultTimeLocale "%Y-%m-%d" dateString :: Maybe Day

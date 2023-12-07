@@ -10,7 +10,7 @@ import Data.Maybe
 data RegressionModel = PolynomialRegressionModel Int [Double] | LinearRegressionModel [Double]
    deriving (Show)
 
--- Lagged values function with rolling mean as an additional feature
+-- Lagged values function
 laggedValues :: Int -> [PR.PriceResponse] -> [[Double]]
 laggedValues lag stockData =
   let t1 = map (\i -> 1 : take lag (map PR.close (drop i stockData))) [0..length stockData - lag - 1] in
@@ -23,12 +23,11 @@ linearRegression xs ys lag =
       yVector = LA.asColumn $ LA.fromList (take (length ys - lag) ys)
       result = concat $ LA.toLists $ LA.linearSolveSVD xMatrix yVector
   in
-    trace ("Length of xMatrix: " ++ show (LA.rows xMatrix, LA.cols xMatrix)) $
-    trace ("Length of yVector: " ++ show (LA.size yVector)) $
     if null result
         then Left "Error running regression"
     else
         Right $ LinearRegressionModel result
+
 
 performLinearRegression :: [PR.PriceResponse] -> Int -> Either String RegressionModel
 performLinearRegression responses lag = let y = map PR.close responses; x = laggedValues lag responses in
@@ -57,9 +56,9 @@ calculateLaggedValuesForNewDay responses lag newDayTimestamp =
 generateNewFeatures :: [PR.PriceResponse] -> Int -> Day -> [Double]
 generateNewFeatures stockData lag predictionDay = 1.0 : calculateLaggedValuesForNewDay stockData lag predictionDay
 
+-- Generate a month's worth of predictions
 predictMonthInAdvance :: RegressionModel -> [PR.PriceResponse] -> [[Double]] -> Int -> Day -> Day -> ([Double],[PR.PriceResponse])
 predictMonthInAdvance model stockData laggedVals lag currentDay today |
   currentDay > addDays 30 today = ([],[]) |
   otherwise = let newFeatures = generateNewFeatures stockData lag currentDay; newPrediction = predict model newFeatures; newPR = PR.PriceResponse {PR.date = currentDay, PR.open = 1.0, PR.high = 1.0, PR.low = 1.0, PR.close = newPrediction, PR.adjClose = 1.0, PR.volume = 1.0}; newStockData = stockData ++ [newPR]; newLVs = laggedVals ++ [newFeatures]; (recursePreds, recurseSD) = predictMonthInAdvance model newStockData newLVs lag (addDays 1 currentDay) today in
-    -- traceShow (newFeatures, newPrediction, newLVs)
     (recursePreds ++ [newPrediction], recurseSD ++ [newPR])

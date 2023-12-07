@@ -19,12 +19,11 @@ saveChartAsHtml filePath chart = do
         html = "<html><head><script src='https://cdn.jsdelivr.net/npm/vega@5'></script><script src='https://cdn.jsdelivr.net/npm/vega-lite@5'></script><script src='https://cdn.jsdelivr.net/npm/vega-embed@6'></script></head><body><div id='vis'></div><script type='text/javascript'>var spec = " <> encode spec <> "; vegaEmbed('#vis', spec);</script></body></html>"
     BL.writeFile filePath html
 
-
--- Function to convert StockPerformance to hvega data
+-- Convert to hvega data for createClosePriceChart
 toVegaData :: PriceResponse -> Value
 toVegaData sp = object ["Date" .= date sp, "Close" .= close sp]
 
--- Function to create a Vega-Lite chart for Close Prices
+-- Plot close prices
 createClosePriceChart :: [PriceResponse] -> VL.VegaLite
 createClosePriceChart stockData =
     let dataValues = VL.dataFromRows [] $ map toVegaData stockData
@@ -33,9 +32,11 @@ createClosePriceChart stockData =
 
     in VL.toVegaLite [dataValues, VL.mark VL.Line [], enc []]
 
+-- convert  to hvega data for generatePlot
 toVegaData2 :: [PriceResponse] -> [Double] -> [Value]
 toVegaData2 stockData predictions = [object ["Date" .= date (fst item), "Close" .= close (fst item), "Predicted" .= snd item] | item <- zip stockData predictions]
 
+-- Plots close values, predictions on those values using our model and predictions for a month in advance
 generatePlot :: [PriceResponse] -> RegressionModel -> String -> Day -> Int -> VL.VegaLite
 generatePlot stockData model ticker currDay lag =
   let predictions = map (predict model . generateNewFeatures stockData lag . date) stockData
